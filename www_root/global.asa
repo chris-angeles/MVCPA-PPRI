@@ -1,0 +1,70 @@
+<SCRIPT LANGUAGE="VBScript" RUNAT="Server">
+
+Sub Application_OnStart
+	Application("CurrentVisitors") = 0
+	If InStr(1,Server.MapPath("."),"E:\abtpa.tamu.edu\www_root",1) > 0 Then ' Production
+		Application("ConnectionString") = "Provider=MSOLEDBSQL;Server=sql.pprinet.tamu.edu;Database=MVCPA_DB;Trusted_Connection=Yes;Connect Timeout=60;MARS_Connection=yes;"
+		Application("DocumentRoot") = "E:\abtpa.tamu.edu\WWW_Documents\"
+		Application("Instance") = "Production"
+	ElseIf InStr(1,Server.MapPath("."),"E:\abtpatest.tamu.edu\www_root",1) > 0 Then ' Test
+		Application("ConnectionString") = "Provider=MSOLEDBSQL;Server=SQL.pprinet.tamu.edu;Database=MVCPATest_DB;Trusted_Connection=Yes;Connect Timeout=60;MARS_Connection=yes;"
+		Application("DocumentRoot") = "E:\abtpatest.tamu.edu\WWW_Documents\"
+		Application("Instance") = "Test"
+	ElseIf InStr(1,Server.MapPath("."),"D:\Web Sites\abtpa\www_root",1) > 0 Then ' Dev for Jim
+		Application("ConnectionString") = "Provider=MSOLEDBSQL;Server=(local);Database=MVCPA_DB;Trusted_Connection=Yes;MARS_Connection=yes;"
+		Application("DocumentRoot") = "D:\Web Sites\abtpa\www_documents\"
+		Application("Instance") = "Development - Jim"
+	Else ' Dev for Gourav
+		Application("ConnectionString") = "Provider=MSOLEDBSQL;Server=(local);Database=MVCPA_DB;Trusted_Connection=Yes;MARS_Connection=yes;"
+		Application("DocumentRoot") = "C:\inetpub\wwwroot\MVCPA2\documents\" ' This probably needs to be change.
+		Application("Instance") = "Development - Gourav"
+	End If
+    Application("DefaultFiscalYear") = 2024
+	If Month(Date())>8 Then
+		Application("CurrentFiscalYear") = Year(Date()) + 1
+	Else
+		Application("CurrentFiscalYear") = Year(Date())
+	End If
+End Sub
+
+Sub Application_OnEnd
+End Sub
+
+Sub Session_OnStart
+	Session.Timeout = 240
+	Session("SystemID") = 0
+	Application.Lock
+	Application("CurrentVisitors") = Application("CurrentVisitors") + 1
+	Application.UnLock
+	Session("ID") = Session.SessionID
+End Sub
+
+Sub Session_OnEnd
+	Application.Lock
+	Application("CurrentVisitors") = Application("CurrentVisitors") - 1
+	Application.UnLock
+	Dim Con
+	Set Con = server.CreateObject("ADODB.connection")
+	Con.Open(Application("ConnectionString"))
+	If Len(Session.SessionID)>0 Then
+		Con.Execute("UPDATE [System].LoginLog SET LogoutTime=getdate() WHERE LogInTime>=" & prepStringSQL(Date()) & " AND SessionID=" & prepStringSQL(Session.SessionID))
+	ElseIf Len(Session("ID"))>0 Then
+		Con.Execute("UPDATE System.LoginLog SET LogoutTime=getdate() WHERE LogoutTime>=" & prepStringSQL(Date()) & " AND SessionID=" & prepStringSQL(Session("ID")))
+	End If
+	Session("SystemID") = 0
+End Sub
+
+function prepStringSQL(StringValue)
+	If IsNull(StringValue) = True Then
+		prepStringSQL = "null"
+	else
+		prepStringSQL = Trim(StringValue)
+		If len(prepStringSQL) = 0 Then 
+			prepStringSQL = "null"
+		else
+			prepStringSQL = Replace(prepStringSQL,"'","''")
+			prepStringSQL = "'" & prepStringSQL & "'"
+		End If
+	End If
+end function
+</SCRIPT>

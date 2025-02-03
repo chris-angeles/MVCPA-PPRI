@@ -1,0 +1,16 @@
+﻿fieldset {
+	margin-top: 10px;
+	margin-bottom: 10px;
+	margin-left: 0px;
+	margin-right: 0px;
+}
+
+label {
+  display: block;
+  float: left;
+  clear: left;
+  width: 18em;
+  overflow: auto;
+  padding-right: 1em;
+  text-align: right;
+}
